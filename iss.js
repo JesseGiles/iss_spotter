@@ -34,7 +34,7 @@ const fetchMyIP = function(callback) {
 
 const fetchCoordsByIP = function(ip, callback) {
   request(`http://ipwho.is/${ip}`, (error, response, body) => {
-    
+
     if (error) {
       callback(error, null);
       return;
@@ -51,7 +51,7 @@ const fetchCoordsByIP = function(ip, callback) {
     }
 
     const { latitude, longitude } = parsedBody;
-    callback(null, {latitude, longitude});
+    callback(null, { latitude, longitude });
 
   });
 };
@@ -66,9 +66,10 @@ const fetchCoordsByIP = function(ip, callback) {
  *   - The fly over times as an array of objects (null if error). Example:
  *     [ { risetime: 134564234, duration: 600 }, ... ]
  */
+
 const fetchISSFlyOverTimes = function(coords, callback) {
   request(`https://iss-flyover.herokuapp.com/json/?lat=${coords.latitude}&lon=${coords.longitude}`, (error, response, body) => {
-    
+
     if (error) {
       callback(error, null);
       return;
@@ -87,5 +88,40 @@ const fetchISSFlyOverTimes = function(coords, callback) {
   });
 };
 
+/**
+ * Orchestrates multiple API requests in order to determine the next 5 upcoming ISS fly overs for the user's current location.
+ * Input:
+ *   - A callback with an error or results.
+ * Returns (via Callback):
+ *   - An error, if any (nullable)
+ *   - The fly-over times as an array (null if error):
+ *     [ { risetime: <number>, duration: <number> }, ... ]
+ */
 
-module.exports = { fetchMyIP, fetchCoordsByIP, fetchISSFlyOverTimes };
+const nextISSTimesForMyLocation = function(callback) {
+  fetchMyIP((error, ip) => {
+    if (error) {
+      return callback(error, null);
+    }
+
+    fetchCoordsByIP(ip, (error, latLong) => {
+      if (error) {
+        return callback(error, null);
+      }
+
+      fetchISSFlyOverTimes(latLong, (error, flyBys) => {
+        if (error) {
+          return callback(error, null);
+        }
+
+        callback(null, flyBys);
+
+      });
+
+    });
+  });
+
+};
+
+
+module.exports = { fetchMyIP, fetchCoordsByIP, fetchISSFlyOverTimes, nextISSTimesForMyLocation };
